@@ -15,22 +15,27 @@
  */
 package com.readystatesoftware.chuck.internal.ui;
 
+import android.annotation.SuppressLint;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.support.annotation.Nullable;
-import android.support.design.widget.TabLayout;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.CursorLoader;
-import android.support.v4.content.Loader;
-import android.support.v4.view.ViewPager;
-import android.support.v7.app.ActionBar;
+import android.widget.Toast;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import com.google.android.material.tabs.TabLayout;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.loader.app.LoaderManager;
+import androidx.loader.content.CursorLoader;
+import androidx.loader.content.Loader;
+import androidx.viewpager.widget.ViewPager;
+import androidx.appcompat.app.ActionBar;
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
+import androidx.appcompat.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -49,7 +54,8 @@ import java.util.List;
 import static com.readystatesoftware.chuck.internal.ui.TransactionPayloadFragment.TYPE_REQUEST;
 import static com.readystatesoftware.chuck.internal.ui.TransactionPayloadFragment.TYPE_RESPONSE;
 
-public class TransactionActivity extends BaseChuckActivity implements LoaderManager.LoaderCallbacks<Cursor> {
+@SuppressWarnings("deprecation") public class TransactionActivity extends BaseChuckActivity
+    implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private static final String ARG_TRANSACTION_ID = "transaction_id";
 
@@ -72,19 +78,21 @@ public class TransactionActivity extends BaseChuckActivity implements LoaderMana
         super.onCreate(savedInstanceState);
         setContentView(R.layout.chuck_activity_transaction);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        title = (TextView) findViewById(R.id.toolbar_title);
+        title = findViewById(R.id.toolbar_title);
 
         final ActionBar ab = getSupportActionBar();
-        ab.setDisplayHomeAsUpEnabled(true);
+        if (ab != null) {
+            ab.setDisplayHomeAsUpEnabled(true);
+        }
 
-        ViewPager viewPager = (ViewPager) findViewById(R.id.viewpager);
+        ViewPager viewPager = findViewById(R.id.viewpager);
         if (viewPager != null) {
             setupViewPager(viewPager);
         }
 
-        TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
+        TabLayout tabLayout = findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(viewPager);
 
         transactionId = getIntent().getLongExtra(ARG_TRANSACTION_ID, 0);
@@ -106,7 +114,10 @@ public class TransactionActivity extends BaseChuckActivity implements LoaderMana
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.share_text) {
+        if (item.getItemId() == R.id.copy_text) {
+            copy(FormatUtils.getShareCurlCommand(transaction));
+            return true;
+        } else if (item.getItemId() == R.id.share_text) {
             share(FormatUtils.getShareText(this, transaction));
             return true;
         } else if (item.getItemId() == R.id.share_curl) {
@@ -117,24 +128,32 @@ public class TransactionActivity extends BaseChuckActivity implements LoaderMana
         }
     }
 
-    @Override
+    private void copy(String shareCurlCommand) {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("chuck", shareCurlCommand);
+        clipboard.setPrimaryClip(clip);
+        Toast.makeText(this, "copied to clipboard", Toast.LENGTH_SHORT).show();
+    }
+
+    @NonNull @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         CursorLoader loader = new CursorLoader(this);
-        loader.setUri(ContentUris.withAppendedId(ChuckContentProvider.TRANSACTION_URI, transactionId));
+        loader.setUri(
+            ContentUris.withAppendedId(ChuckContentProvider.TRANSACTION_URI, transactionId));
         return loader;
     }
 
     @Override
-    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+    public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
         transaction = LocalCupboard.getInstance().withCursor(data).get(HttpTransaction.class);
         populateUI();
     }
 
     @Override
-    public void onLoaderReset(Loader<Cursor> loader) {
+    public void onLoaderReset(@NonNull Loader<Cursor> loader) {
     }
 
-    private void populateUI() {
+    @SuppressLint("SetTextI18n") private void populateUI() {
         if (transaction != null) {
             title.setText(transaction.getMethod() + " " + transaction.getPath());
             for (TransactionFragment fragment : adapter.fragments) {
@@ -146,8 +165,10 @@ public class TransactionActivity extends BaseChuckActivity implements LoaderMana
     private void setupViewPager(ViewPager viewPager) {
         adapter = new Adapter(getSupportFragmentManager());
         adapter.addFragment(new TransactionOverviewFragment(), getString(R.string.chuck_overview));
-        adapter.addFragment(TransactionPayloadFragment.newInstance(TYPE_REQUEST), getString(R.string.chuck_request));
-        adapter.addFragment(TransactionPayloadFragment.newInstance(TYPE_RESPONSE), getString(R.string.chuck_response));
+        adapter.addFragment(TransactionPayloadFragment.newInstance(TYPE_REQUEST),
+            getString(R.string.chuck_request));
+        adapter.addFragment(TransactionPayloadFragment.newInstance(TYPE_RESPONSE),
+            getString(R.string.chuck_response));
         viewPager.setAdapter(adapter);
         viewPager.addOnPageChangeListener(new SimpleOnPageChangedListener() {
             @Override

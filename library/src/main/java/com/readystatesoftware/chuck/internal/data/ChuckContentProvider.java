@@ -24,9 +24,9 @@ import android.content.pm.ProviderInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.WorkerThread;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.WorkerThread;
 
 import com.readystatesoftware.chuck.internal.support.JsonConvertor;
 
@@ -45,17 +45,20 @@ public class ChuckContentProvider extends ContentProvider {
 
     private ChuckDbOpenHelper databaseHelper;
 
-
     @WorkerThread
-    public static String export(Context context){
+    public static String export(Context context) {
         ChuckDbOpenHelper chuckDbOpenHelper = new ChuckDbOpenHelper(context);
         SQLiteDatabase readableDatabase = chuckDbOpenHelper.getReadableDatabase();
-        QueryResultIterable<HttpTransaction> iterable = LocalCupboard.getInstance().withDatabase(readableDatabase).query(HttpTransaction.class).query();
+        QueryResultIterable<HttpTransaction> iterable = LocalCupboard.getInstance()
+            .withDatabase(readableDatabase)
+            .query(HttpTransaction.class)
+            .query();
         List<HttpTransaction> list = getListFromQueryResultIterator(iterable);
         return JsonConvertor.getInstance().toJson(list);
     }
 
-    private static List<HttpTransaction> getListFromQueryResultIterator(QueryResultIterable<HttpTransaction> iter) {
+    private static List<HttpTransaction> getListFromQueryResultIterator(
+        QueryResultIterable<HttpTransaction> iter) {
 
         final List<HttpTransaction> transactionArrayList = new ArrayList<>();
         for (HttpTransaction bunny : iter) {
@@ -75,33 +78,41 @@ public class ChuckContentProvider extends ContentProvider {
 
     @Override
     public boolean onCreate() {
-        databaseHelper = new ChuckDbOpenHelper(getContext());
+        databaseHelper = new ChuckDbOpenHelper(requireContext());
         return true;
+    }
+
+    private Context requireContext() {
+        Context context = getContext();
+        if (context == null) {
+            throw new IllegalStateException("Context is null");
+        }
+        return context;
     }
 
     @Override
     @Nullable
     public Cursor query(@NonNull Uri uri, @Nullable String[] projection,
-                        @Nullable String selection, @Nullable String[] selectionArgs,
-                        @Nullable String sortOrder) {
+        @Nullable String selection, @Nullable String[] selectionArgs,
+        @Nullable String sortOrder) {
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
         Cursor cursor = null;
         switch (matcher.match(uri)) {
             case TRANSACTIONS:
                 cursor = LocalCupboard.getInstance().withDatabase(db).query(HttpTransaction.class).
-                        withProjection(projection).
-                        withSelection(selection, selectionArgs).
-                        orderBy(sortOrder).
-                        getCursor();
+                    withProjection(projection).
+                    withSelection(selection, selectionArgs).
+                    orderBy(sortOrder).
+                    getCursor();
                 break;
             case TRANSACTION:
                 cursor = LocalCupboard.getInstance().withDatabase(db).query(HttpTransaction.class).
-                        byId(ContentUris.parseId(uri)).
-                        getCursor();
+                    byId(ContentUris.parseId(uri)).
+                    getCursor();
                 break;
         }
         if (cursor != null) {
-            cursor.setNotificationUri(getContext().getContentResolver(), uri);
+            cursor.setNotificationUri(requireContext().getContentResolver(), uri);
         }
         return cursor;
     }
@@ -118,50 +129,57 @@ public class ChuckContentProvider extends ContentProvider {
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
         switch (matcher.match(uri)) {
             case TRANSACTIONS:
-                long id = db.insert(LocalCupboard.getInstance().getTable(HttpTransaction.class), null, contentValues);
+                long id =
+                    db.insert(LocalCupboard.getInstance().getTable(HttpTransaction.class), null,
+                        contentValues);
                 if (id > 0) {
-                    getContext().getContentResolver().notifyChange(uri, null);
+                    requireContext().getContentResolver().notifyChange(uri, null);
                     return ContentUris.withAppendedId(TRANSACTION_URI, id);
                 }
+            default:
+                return null;
         }
-        return null;
     }
 
     @Override
-    public int delete(@NonNull Uri uri, @Nullable String selection, @Nullable String[] selectionArgs) {
+    public int delete(@NonNull Uri uri, @Nullable String selection,
+        @Nullable String[] selectionArgs) {
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
         int result = 0;
         switch (matcher.match(uri)) {
             case TRANSACTIONS:
-                result = db.delete(LocalCupboard.getInstance().getTable(HttpTransaction.class), selection, selectionArgs);
+                result = db.delete(LocalCupboard.getInstance().getTable(HttpTransaction.class),
+                    selection, selectionArgs);
                 break;
             case TRANSACTION:
                 result = db.delete(LocalCupboard.getInstance().getTable(HttpTransaction.class),
-                        "_id = ?", new String[]{ uri.getPathSegments().get(1) });
+                    "_id = ?", new String[] { uri.getPathSegments().get(1) });
                 break;
         }
         if (result > 0) {
-            getContext().getContentResolver().notifyChange(uri, null);
+            requireContext().getContentResolver().notifyChange(uri, null);
         }
         return result;
     }
 
     @Override
     public int update(@NonNull Uri uri, @Nullable ContentValues contentValues,
-                      @Nullable String selection, @Nullable String[] selectionArgs) {
+        @Nullable String selection, @Nullable String[] selectionArgs) {
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
         int result = 0;
         switch (matcher.match(uri)) {
             case TRANSACTIONS:
-                result = db.update(LocalCupboard.getInstance().getTable(HttpTransaction.class), contentValues, selection, selectionArgs);
+                result = db.update(LocalCupboard.getInstance().getTable(HttpTransaction.class),
+                    contentValues, selection, selectionArgs);
                 break;
             case TRANSACTION:
-                result = db.update(LocalCupboard.getInstance().getTable(HttpTransaction.class), contentValues,
-                        "_id = ?", new String[]{ uri.getPathSegments().get(1) });
+                result = db.update(LocalCupboard.getInstance().getTable(HttpTransaction.class),
+                    contentValues,
+                    "_id = ?", new String[] { uri.getPathSegments().get(1) });
                 break;
         }
         if (result > 0) {
-            getContext().getContentResolver().notifyChange(uri, null);
+            requireContext().getContentResolver().notifyChange(uri, null);
         }
         return result;
     }

@@ -23,6 +23,7 @@ import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.Headers;
 import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
@@ -91,6 +92,7 @@ class SampleApiService {
         @GET("/drip")
         Call<Void> drip(@Query("numbytes") int bytes, @Query("duration") int seconds, @Query("delay") int delay, @Query("code") int code);
         @GET("/deny")
+        @Headers("X_HEADER_REQUEST_TEST:curl param test")
         Call<Void> deny();
         @GET("/cache")
         Call<Void> cache(@Header("If-Modified-Since") String ifModifiedSince);

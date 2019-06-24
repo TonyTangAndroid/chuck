@@ -5,10 +5,9 @@ buildscript {
         jcenter()
         google()
         maven { url 'https://jitpack.io' }
-
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.2.1'
+        classpath 'com.android.tools.build:gradle:3.4.1'
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -34,11 +33,14 @@ task clean(type: Delete) {
 }
 
 ext {
-    minSdkVersion = 16
-    targetSdkVersion = 28
-    compileSdkVersion = 28
-    buildToolsVersion = '28.0.3'
+    minSdkVersion = 19
+    targetSdkVersion = 29
+    compileSdkVersion = 29
+    buildToolsVersion = '29.0.0'
 
-    supportLibVersion = '28.0.0'
-    okhttp3Version = '3.11.0'
+    appcompatVersion = '1.0.2'
+    materialVersion = '1.0.0'
+    okhttp3Version = '3.14.2'
+    gsonVersion = '2.8.5'
+    retrofitVersion = '2.6.0'
 }

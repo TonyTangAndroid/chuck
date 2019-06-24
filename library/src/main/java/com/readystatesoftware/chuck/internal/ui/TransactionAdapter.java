@@ -15,11 +15,13 @@
  */
 package com.readystatesoftware.chuck.internal.ui;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.widget.CursorAdapter;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+import androidx.cursoradapter.widget.CursorAdapter;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -54,18 +56,21 @@ class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.ViewHol
         color400 = ContextCompat.getColor(context, R.color.chuck_status_400);
         color300 = ContextCompat.getColor(context, R.color.chuck_status_300);
 
-        cursorAdapter = new CursorAdapter(TransactionAdapter.this.context, null, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER) {
+        cursorAdapter = new CursorAdapter(TransactionAdapter.this.context, null,
+            CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER) {
             @Override
             public View newView(Context context, Cursor cursor, ViewGroup parent) {
-                View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.chuck_list_item_transaction, parent, false);
+                View itemView = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.chuck_list_item_transaction, parent, false);
                 ViewHolder holder = new ViewHolder(itemView);
                 itemView.setTag(holder);
                 return itemView;
             }
 
-            @Override
+            @SuppressLint("SetTextI18n") @Override
             public void bindView(View view, final Context context, Cursor cursor) {
-                final HttpTransaction transaction = LocalCupboard.getInstance().withCursor(cursor).get(HttpTransaction.class);
+                final HttpTransaction transaction =
+                    LocalCupboard.getInstance().withCursor(cursor).get(HttpTransaction.class);
                 final ViewHolder holder = (ViewHolder) view.getTag();
                 holder.path.setText(transaction.getMethod() + " " + transaction.getPath());
                 holder.host.setText(transaction.getHost());
@@ -85,12 +90,10 @@ class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.ViewHol
                 }
                 setStatusColor(holder, transaction);
                 holder.transaction = transaction;
-                holder.view.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (null != TransactionAdapter.this.listener) {
-                            TransactionAdapter.this.listener.onListFragmentInteraction(holder.transaction);
-                        }
+                holder.view.setOnClickListener(v -> {
+                    if (null != TransactionAdapter.this.listener) {
+                        TransactionAdapter.this.listener.onListFragmentInteraction(
+                            holder.transaction);
                     }
                 });
             }
@@ -122,13 +125,13 @@ class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.ViewHol
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         cursorAdapter.getCursor().moveToPosition(position);
         cursorAdapter.bindView(holder.itemView, context, cursorAdapter.getCursor());
     }
 
-    @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    @NonNull @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = cursorAdapter.newView(context, cursorAdapter.getCursor(), parent);
         return new ViewHolder(v);
     }
@@ -139,26 +142,26 @@ class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.ViewHol
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {
-        public final View view;
-        public final TextView code;
-        public final TextView path;
-        public final TextView host;
-        public final TextView start;
-        public final TextView duration;
-        public final TextView size;
-        public final ImageView ssl;
+        final View view;
+        final TextView code;
+        final TextView path;
+        final TextView host;
+        final TextView start;
+        final TextView duration;
+        final TextView size;
+        final ImageView ssl;
         HttpTransaction transaction;
 
         ViewHolder(View view) {
             super(view);
             this.view = view;
-            code = (TextView) view.findViewById(R.id.code);
-            path = (TextView) view.findViewById(R.id.path);
-            host = (TextView) view.findViewById(R.id.host);
-            start = (TextView) view.findViewById(R.id.start);
-            duration = (TextView) view.findViewById(R.id.duration);
-            size = (TextView) view.findViewById(R.id.size);
-            ssl = (ImageView) view.findViewById(R.id.ssl);
+            code = view.findViewById(R.id.code);
+            path = view.findViewById(R.id.path);
+            host = view.findViewById(R.id.host);
+            start = view.findViewById(R.id.start);
+            duration = view.findViewById(R.id.duration);
+            size = view.findViewById(R.id.size);
+            ssl = view.findViewById(R.id.ssl);
         }
     }
 }

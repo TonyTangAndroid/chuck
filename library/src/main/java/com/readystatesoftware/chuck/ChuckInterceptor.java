@@ -32,6 +32,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,7 +51,8 @@ import okio.GzipSource;
 import okio.Okio;
 
 /**
- * An OkHttp Interceptor which persists and displays HTTP activity in your application for later inspection.
+ * An OkHttp Interceptor which persists and displays HTTP activity in your application for later
+ * inspection.
  */
 public final class ChuckInterceptor implements Interceptor {
 
@@ -110,6 +112,7 @@ public final class ChuckInterceptor implements Interceptor {
 
     /**
      * set all the http response body should be filtered.
+     *
      * @param filterBody true if you want to filter all http response body.
      */
     public ChuckInterceptor setFilterBody(boolean filterBody) {
@@ -119,19 +122,26 @@ public final class ChuckInterceptor implements Interceptor {
 
     /**
      * set the url key word list to stop chuck from caching its data.
-     * @param keyWordUrlList the url level key word list that is to stop chuck from caching its data. All of these data including
-     *                       request headers, request params, request url params, response header, response body will not be cached.
+     *
+     * @param keyWordUrlList the url level key word list that is to stop chuck from caching its
+     * data. All of these data including
+     * request headers, request params, request url params, response header, response body will not
+     * be cached.
      * @return The {@link ChuckInterceptor} instance.
      */
-    public ChuckInterceptor setFilterUrlList(List<String> keyWordUrlList) {
+    @SuppressWarnings("UnusedReturnValue")
+    public ChuckInterceptor setFilterUrlList(
+        List<String> keyWordUrlList) {
         this.filterUrlList = keyWordUrlList;
         return this;
     }
 
-     /**
-      * set the header key word list to stop chuck from caching its data.
-      * @param keyWordHeaderList the header level key word list that is to stop chuck from caching the value of such header.
-      * @return The {@link ChuckInterceptor} instance.
+    /**
+     * set the header key word list to stop chuck from caching its data.
+     *
+     * @param keyWordHeaderList the header level key word list that is to stop chuck from caching
+     * the value of such header.
+     * @return The {@link ChuckInterceptor} instance.
      */
     public ChuckInterceptor setFilterHeaderList(List<String> keyWordHeaderList) {
         this.filterHeaderList = keyWordHeaderList;
@@ -162,17 +172,16 @@ public final class ChuckInterceptor implements Interceptor {
         return this;
     }
 
-    private String replacedUrl(String url) {
-        if (this.filterUrlList ==null){
-            return null;
+    private boolean shouldBeIgnored(String url) {
+        if (this.filterUrlList == null) {
+            return false;
         }
         for (String keyWord : filterUrlList) {
-            if (matches(url, keyWord)){
-                int endIndex = url.lastIndexOf("?");
-                return endIndex > 0 ? url.substring(0, endIndex) : url;
+            if (matches(url, keyWord)) {
+                return true;
             }
         }
-        return null;
+        return false;
     }
 
     private boolean matches(String url, String regex) {
@@ -183,6 +192,10 @@ public final class ChuckInterceptor implements Interceptor {
 
     @Override public Response intercept(Chain chain) throws IOException {
         Request request = chain.request();
+        String url = request.url().toString();
+        if (shouldBeIgnored(url)) {
+            return chain.proceed(request);
+        }
 
         RequestBody requestBody = request.body();
         boolean hasRequestBody = requestBody != null;
@@ -192,40 +205,29 @@ public final class ChuckInterceptor implements Interceptor {
 
         transaction.setMethod(request.method());
 
-        String url = request.url().toString();
-        String replacedUrl = replacedUrl(url);
-        boolean urlNeedToBeFiltered = replacedUrl!=null;
-        if (!urlNeedToBeFiltered){
-            transaction.setUrl(url);
-        }else {
-            transaction.setUrl(replacedUrl);
-        }
-        if (!urlNeedToBeFiltered){
-            transaction.setRequestHeaders(request.headers(), filterHeaderList);
-        }
+        transaction.setUrl(url);
+        transaction.setRequestHeaders(request.headers(), filterHeaderList);
+        MediaType mediaType = requestBody != null ? requestBody.contentType() : null;
         if (hasRequestBody) {
-            if (requestBody.contentType() != null) {
-                transaction.setRequestContentType(requestBody.contentType().toString());
+            if (mediaType != null) {
+                transaction.setRequestContentType(mediaType.toString());
             }
             if (requestBody.contentLength() != -1) {
                 transaction.setRequestContentLength(requestBody.contentLength());
             }
         }
 
-        transaction.setRequestBodyIsPlainText(!bodyHasUnsupportedEncoding(request.headers()));
+        transaction.setRequestBodyIsPlainText(bodyIsSupportedEncoding(request.headers()));
         if (hasRequestBody && transaction.requestBodyIsPlainText()) {
             BufferedSource source = getNativeSource(new Buffer(), bodyGzipped(request.headers()));
-            Buffer buffer = source.buffer();
+            Buffer buffer = source.getBuffer();
             requestBody.writeTo(buffer);
             Charset charset = UTF8;
-            MediaType contentType = requestBody.contentType();
-            if (contentType != null) {
-                charset = contentType.charset(UTF8);
+            if (mediaType != null) {
+                charset = mediaType.charset(UTF8);
             }
             if (isPlaintext(buffer)) {
-                if (!urlNeedToBeFiltered){
-                    transaction.setRequestBody(readFromBuffer(buffer, charset));
-                }
+                transaction.setRequestBody(readFromBuffer(buffer, charset));
             } else {
                 transaction.setResponseBodyIsPlainText(false);
             }
@@ -246,26 +248,24 @@ public final class ChuckInterceptor implements Interceptor {
 
         ResponseBody responseBody = response.body();
 
-        if (!urlNeedToBeFiltered) {
-            transaction.setRequestHeaders(response.request().headers(), filterHeaderList); // includes headers added later in the chain
-        }
+        transaction.setRequestHeaders(response.request().headers(),
+            filterHeaderList); // includes headers added later in the chain
         transaction.setResponseDate(new Date());
         transaction.setTookMs(tookMs);
         transaction.setProtocol(response.protocol().toString());
         transaction.setResponseCode(response.code());
         transaction.setResponseMessage(response.message());
-        transaction.setResponseContentLength(responseBody.contentLength());
+        transaction.setResponseContentLength(Objects.requireNonNull(responseBody).contentLength());
         if (responseBody.contentType() != null) {
-            transaction.setResponseContentType(responseBody.contentType().toString());
+            transaction.setResponseContentType(
+                Objects.requireNonNull(responseBody.contentType()).toString());
         }
-        if (!urlNeedToBeFiltered) {
-            transaction.setResponseHeaders(response.headers(), filterHeaderList);
-        }
-        transaction.setResponseBodyIsPlainText(!bodyHasUnsupportedEncoding(response.headers()));
+        transaction.setResponseHeaders(response.headers(), filterHeaderList);
+        transaction.setResponseBodyIsPlainText(bodyIsSupportedEncoding(response.headers()));
         if (HttpHeaders.hasBody(response) && transaction.responseBodyIsPlainText()) {
             BufferedSource source = getNativeSource(response);
             source.request(Long.MAX_VALUE);
-            Buffer buffer = source.buffer();
+            Buffer buffer = source.getBuffer();
             Charset charset = UTF8;
             MediaType contentType = responseBody.contentType();
             if (contentType != null) {
@@ -277,12 +277,10 @@ public final class ChuckInterceptor implements Interceptor {
                 }
             }
             if (isPlaintext(buffer)) {
-                if (!urlNeedToBeFiltered) {
-                    if (!filterBody){
-                        transaction.setResponseBody(readFromBuffer(buffer.clone(), charset));
-                    }else {
-                        transaction.setResponseBody("****** body has been hidden ******");
-                    }
+                if (!filterBody) {
+                    transaction.setResponseBody(readFromBuffer(buffer.clone(), charset));
+                } else {
+                    transaction.setResponseBody("****** body has been hidden ******");
                 }
             } else {
                 transaction.setResponseBodyIsPlainText(false);
@@ -296,9 +294,12 @@ public final class ChuckInterceptor implements Interceptor {
     }
 
     private Uri create(HttpTransaction transaction) {
-        ContentValues values = LocalCupboard.getInstance().withEntity(HttpTransaction.class).toContentValues(transaction);
+        ContentValues values = LocalCupboard.getInstance()
+            .withEntity(HttpTransaction.class)
+            .toContentValues(transaction);
         Uri uri = context.getContentResolver().insert(ChuckContentProvider.TRANSACTION_URI, values);
-        transaction.setId(Long.valueOf(uri.getLastPathSegment()));
+        transaction.setId(Long.valueOf(
+            Objects.requireNonNull(Objects.requireNonNull(uri).getLastPathSegment())));
         if (showNotification) {
             notificationHelper.show(transaction);
         }
@@ -306,8 +307,11 @@ public final class ChuckInterceptor implements Interceptor {
         return uri;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     private int update(HttpTransaction transaction, Uri uri) {
-        ContentValues values = LocalCupboard.getInstance().withEntity(HttpTransaction.class).toContentValues(transaction);
+        ContentValues values = LocalCupboard.getInstance()
+            .withEntity(HttpTransaction.class)
+            .toContentValues(transaction);
         int updated = context.getContentResolver().update(uri, values, null, null);
         if (showNotification && updated > 0) {
             notificationHelper.show(transaction);
@@ -316,7 +320,8 @@ public final class ChuckInterceptor implements Interceptor {
     }
 
     /**
-     * Returns true if the body in question probably contains human readable text. Uses a small sample
+     * Returns true if the body in question probably contains human readable text. Uses a small
+     * sample
      * of code points to detect unicode control characters commonly used in binary file signatures.
      */
     private boolean isPlaintext(Buffer buffer) {
@@ -339,11 +344,11 @@ public final class ChuckInterceptor implements Interceptor {
         }
     }
 
-    private boolean bodyHasUnsupportedEncoding(Headers headers) {
+    private boolean bodyIsSupportedEncoding(Headers headers) {
         String contentEncoding = headers.get("Content-Encoding");
-        return contentEncoding != null &&
-                !contentEncoding.equalsIgnoreCase("identity") &&
-                !contentEncoding.equalsIgnoreCase("gzip");
+        return contentEncoding == null ||
+            contentEncoding.equalsIgnoreCase("identity") ||
+            contentEncoding.equalsIgnoreCase("gzip");
     }
 
     private boolean bodyGzipped(Headers headers) {
@@ -378,12 +383,12 @@ public final class ChuckInterceptor implements Interceptor {
     private BufferedSource getNativeSource(Response response) throws IOException {
         if (bodyGzipped(response.headers())) {
             BufferedSource source = response.peekBody(maxContentLength).source();
-            if (source.buffer().size() < maxContentLength) {
+            if (source.getBuffer().size() < maxContentLength) {
                 return getNativeSource(source, true);
             } else {
                 Log.w(LOG_TAG, "gzip encoded response was too long");
             }
         }
-        return response.body().source();
+        return Objects.requireNonNull(response.body()).source();
     }
 }

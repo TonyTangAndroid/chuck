@@ -16,8 +16,9 @@
 package com.readystatesoftware.chuck.internal.ui;
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 import android.text.Html;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -27,16 +28,17 @@ import android.widget.TextView;
 
 import com.readystatesoftware.chuck.R;
 import com.readystatesoftware.chuck.internal.data.HttpTransaction;
+import java.util.Objects;
 
 public class TransactionPayloadFragment extends Fragment implements TransactionFragment {
 
-    public static final int TYPE_REQUEST = 0;
-    public static final int TYPE_RESPONSE = 1;
+    static final int TYPE_REQUEST = 0;
+    static final int TYPE_RESPONSE = 1;
 
     private static final String ARG_TYPE = "type";
 
-    TextView headers;
-    TextView body;
+    private TextView headers;
+    private TextView body;
 
     private int type;
     private HttpTransaction transaction;
@@ -44,7 +46,7 @@ public class TransactionPayloadFragment extends Fragment implements TransactionF
     public TransactionPayloadFragment() {
     }
 
-    public static TransactionPayloadFragment newInstance(int type) {
+    static TransactionPayloadFragment newInstance(int type) {
         TransactionPayloadFragment fragment = new TransactionPayloadFragment();
         Bundle b = new Bundle();
         b.putInt(ARG_TYPE, type);
@@ -55,21 +57,21 @@ public class TransactionPayloadFragment extends Fragment implements TransactionF
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        type = getArguments().getInt(ARG_TYPE);
+        type = Objects.requireNonNull(getArguments()).getInt(ARG_TYPE);
         setRetainInstance(true);
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+        @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.chuck_fragment_transaction_payload, container, false);
-        headers = (TextView) view.findViewById(R.id.headers);
-        body = (TextView) view.findViewById(R.id.body);
+        headers = view.findViewById(R.id.headers);
+        body = view.findViewById(R.id.body);
         return view;
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         populateUI();
     }
@@ -85,11 +87,13 @@ public class TransactionPayloadFragment extends Fragment implements TransactionF
             switch (type) {
                 case TYPE_REQUEST:
                     setText(transaction.getRequestHeadersString(true),
-                            transaction.getFormattedRequestBody(), transaction.requestBodyIsPlainText());
+                        transaction.getFormattedRequestBody(),
+                        transaction.requestBodyIsPlainText());
                     break;
                 case TYPE_RESPONSE:
                     setText(transaction.getResponseHeadersString(true),
-                            transaction.getFormattedResponseBody(), transaction.responseBodyIsPlainText());
+                        transaction.getFormattedResponseBody(),
+                        transaction.responseBodyIsPlainText());
                     break;
             }
         }

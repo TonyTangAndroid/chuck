@@ -21,9 +21,9 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.ContextCompat;
+import androidx.annotation.NonNull;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 import android.util.LongSparseArray;
 
 import com.readystatesoftware.chuck.Chuck;
@@ -77,7 +77,7 @@ public class NotificationHelper {
     public synchronized void show(HttpTransaction transaction) {
         addToBuffer(transaction);
         if (!BaseChuckActivity.isInForeground()) {
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(context)
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(context,"chuck")
                     .setContentIntent(PendingIntent.getActivity(context, 0, Chuck.getLaunchIntent(context), 0))
                     .setLocalOnly(true)
                     .setSmallIcon(R.drawable.chuck_ic_notification_white_24dp)

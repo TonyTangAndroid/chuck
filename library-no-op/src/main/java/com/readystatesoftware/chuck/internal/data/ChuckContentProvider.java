@@ -17,9 +17,10 @@ package com.readystatesoftware.chuck.internal.data;
 
 import android.content.Context;
 
-
+@SuppressWarnings("unused")
 public class ChuckContentProvider {
 
+    @SuppressWarnings("unused")
     public static String export(Context context) {
         return null;
     }

@@ -330,7 +330,7 @@ public class HttpTransaction {
             case Requested:
                 return null;
             default:
-                return String.valueOf(responseCode) + " " + responseMessage;
+                return responseCode + " " + responseMessage;
         }
     }
 
@@ -341,7 +341,7 @@ public class HttpTransaction {
             case Requested:
                 return " . . .  " + path;
             default:
-                return String.valueOf(responseCode) + " " + path;
+                return responseCode + " " + path;
         }
     }
 
