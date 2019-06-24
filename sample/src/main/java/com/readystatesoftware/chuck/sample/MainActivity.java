@@ -17,10 +17,9 @@ package com.readystatesoftware.chuck.sample;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
-import android.view.View;
 
 import com.readystatesoftware.chuck.Chuck;
 import com.readystatesoftware.chuck.ChuckInterceptor;
@@ -41,48 +40,31 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        findViewById(R.id.do_http).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                doHttpActivity();
-            }
-        });
-        findViewById(R.id.launch_chuck_directly).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                launchChuckDirectly();
-            }
-        });
-        findViewById(R.id.export_json_data).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                exportJsonData();
-            }
-        });
+        findViewById(R.id.do_http).setOnClickListener(view -> doHttpActivity());
+        findViewById(R.id.launch_chuck_directly).setOnClickListener(view -> launchChuckDirectly());
+        findViewById(R.id.export_json_data).setOnClickListener(view -> exportJsonData());
     }
 
     private void exportJsonData() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String export = ChuckContentProvider.export(MainActivity.this);
-                Log.v("MainActivity", "Exported json:" + export);
-            }
+        new Thread(() -> {
+            String export = ChuckContentProvider.export(MainActivity.this);
+            Log.v("MainActivity", "Exported json:" + export);
         }).run();
     }
 
     private OkHttpClient getClient(Context context) {
 
         ChuckInterceptor interceptor = new ChuckInterceptor(context)
-                .retainDataFor(ChuckInterceptor.Period.ONE_DAY)
-                .showNotification(true);
+            .retainDataFor(ChuckInterceptor.Period.ONE_DAY)
+            .showNotification(true);
         addFilters(interceptor);
 
         return new OkHttpClient.Builder()
-                // Add a ChuckInterceptor instance to your OkHttp client
-                .addInterceptor(interceptor)
-                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
-                .build();
+            // Add a ChuckInterceptor instance to your OkHttp client
+            .addInterceptor(interceptor)
+            .addInterceptor(
+                new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
+            .build();
     }
 
     private void addFilters(ChuckInterceptor interceptor) {
@@ -94,10 +76,9 @@ public class MainActivity extends AppCompatActivity {
         keyWordUrlList.add("cookies");
         keyWordUrlList.add("auth");
 
-
-        interceptor.setFilterBody(true)
-                .setFilterHeaderList(keyWordHeaderList)
-                .setFilterUrlList(keyWordUrlList);
+        interceptor.setFilterBody(false)
+            .setFilterHeaderList(keyWordHeaderList)
+            .setFilterUrlList(keyWordUrlList);
     }
 
     private void launchChuckDirectly() {
@@ -108,8 +89,12 @@ public class MainActivity extends AppCompatActivity {
     private void doHttpActivity() {
         SampleApiService.HttpbinApi api = SampleApiService.getInstance(getClient(this));
         Callback<Void> cb = new Callback<Void>() {
-            @Override public void onResponse(Call call, Response response) {}
-            @Override public void onFailure(Call call, Throwable t) { t.printStackTrace(); }
+            @Override public void onResponse(Call call, Response response) {
+            }
+
+            @Override public void onFailure(Call call, Throwable t) {
+                t.printStackTrace();
+            }
         };
         api.get().enqueue(cb);
         api.post(new SampleApiService.Data("posted")).enqueue(cb);

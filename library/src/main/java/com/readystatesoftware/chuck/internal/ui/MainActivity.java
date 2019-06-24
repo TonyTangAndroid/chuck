@@ -17,8 +17,8 @@ package com.readystatesoftware.chuck.internal.ui;
 
 import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v7.widget.Toolbar;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.Toolbar;
 
 import com.readystatesoftware.chuck.R;
 import com.readystatesoftware.chuck.internal.data.HttpTransaction;
@@ -29,7 +29,7 @@ public class MainActivity extends BaseChuckActivity implements TransactionListFr
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.chuck_activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setSubtitle(getApplicationName());
         if (savedInstanceState == null) {

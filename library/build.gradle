@@ -8,13 +8,17 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         consumerProguardFiles 'proguard-rules.pro'
     }
+    compileOptions {
+        sourceCompatibility = '1.8'
+        targetCompatibility = '1.8'
+    }
 }
 
 dependencies {
-    implementation 'com.google.code.gson:gson:2.8.4'
+    implementation "com.google.code.gson:gson:${gsonVersion}"
     implementation "com.squareup.okhttp3:okhttp:$okhttp3Version"
     implementation 'nl.qbusict:cupboard:2.2.0'
-    implementation "com.android.support:design:$supportLibVersion"
+    implementation "com.google.android.material:material:${materialVersion}"
 }
 
 apply from: rootProject.file('gradle/gradle-mvn-push.gradle')

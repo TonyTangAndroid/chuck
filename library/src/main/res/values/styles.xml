@@ -15,6 +15,7 @@
  ~ limitations under the License.
  -->
 <resources xmlns:tools="http://schemas.android.com/tools">
+
     <style name="Chuck.Theme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">@color/chuck_colorPrimary</item>
         <item name="colorPrimaryDark">@color/chuck_colorPrimaryDark</item>
@@ -22,11 +23,13 @@
     </style>
 
     <style name="Chuck.TextAppearance.ListItem" parent="android:TextAppearance">
-        <item name="android:textStyle">bold</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
     <style name="Chuck.TextAppearance.Label" parent="android:TextAppearance.Small">
-        <item name="android:textStyle">bold</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
     <style name="Chuck.TextAppearance.Value" parent="android:TextAppearance.Small">
